@@ -1,41 +1,96 @@
 ---
-title: "DataProject"
-author: "Aadi"
-date: "2024-12-04"
+title: "Olympic Athlete Medal Prediction: A Statistical Analysis"
+author: "Aadi Bhandary, Alvin Do, Milan Patel"
+date: "12/12/2024"
 output: html_document
 ---
 
-
 ## Introduction
 
-This work seeks to discuss what predictors best predict the odds of earning a medal in the Olympic games. Generally viewers of the Olympics see nations and athletes attain repeated victories in the sports of their preference, but we seek to answer: "What makes these Olympic games feel so predictable?". Are victories delegated by some invisible hand or are there ways we can discern victorious athletes from less successful athletes? In this work we will explore three models: a basic linear model, a logistic regression model based on biological factors, and a backwards AIC model.
+Athletes from around the world compete at the highest levels at the Olympic Games. This analysis uses a comprehensive dataset spanning 120 years of Olympic history to explore a fundamental question: What factors contribute to an athlete winning a medal?
 
-The dataset we will be using is the Olympic dataset 
+Our Athlete Events dataset, provides a repository of information about Olympic participants, including their physical characteristics, age, and sport. By focusing on male athletes in Summer Olympic Games from 2004 onwards, we aim to develop a predictive model that can help understand the key determinants of Olympic success.
+
+The primary goal of this research is to construct a robust statistical model that can predict whether an athlete is likely to win a medal based on attributes such as height, weight, and age. This model could provide valuable insights for athletes and coaches in understanding the physiological factors that might influence Olympic performance.
+
 ## Methods
-In order to accurately test the three hypothesis we developed, we must first establish a standard that the three models can be compared to. The first is accuracy. Across 1000 simulations, we will attain the accuracy of each model as well as the RMSE for each simulation.
 
-Below is the formula for Accuracy:
-$Accuracy = \frac{\sum_{i = 1}^{1000}Correct}{\sum_{i = 1}^{1000}Test Length}$
+### Data Preparation
 
-Below is the formula for RMSE (where i is one of 1000 iterations:
-$RMSE_i = \sqrt{\sum_{j = 1}^{Test Length}\frac{(\hat{y}-y)^2}{Test Length}}$
+We began by preprocessing the Olympic Athletes Events dataset with several key steps:
 
-Since this olympic dataset is large 
-## Section 1: The Linear Model (Alvin)
+1. **Data Filtering**:
+   - Selected only Summer Olympic Games
+   - Focused exclusively on male athletes
+   - Restricted data to games from 2004 onwards
 
-## Section 2: The Logistic Regression (Aadi)
-The core hypothesis behind this model is that the bigger you are, the better. A hypothesis of this nature is simple to assess as it has three predictors: Age, Height, and Weight. Since we are predicting "odds", I found a logistic regression to be the most reasonable. The intuition I hope to actualize is that generally younger, taller, and heavier athletes are likely to win. 
+2. **Data Cleaning**:
+   - Removed entries with missing height, weight, or age data
+   - Created a binary "Podium" variable (1 for medal winners, 0 for non-medalists)
 
-```{r}
+3. **Data Splitting**:
+   - Utilized an 80-20 train-test split for model development and validation
 
-```
+### Modeling Approach
 
-## Section 3: Backwards AIC (Milan)
+We developed three logistic regression models to predict medal achievement:
+
+1. **Basic Model**: 
+   - Predictors: Height, Weight, Age
+   - Simple linear relationship with medal probability
+
+2. **Interaction Model**: 
+   - Predictors: Height * Weight + Age
+   - Explored potential interactive effects between physical attributes
+
+3. **Stepwise AIC Model**: 
+   - Used automated model selection with Akaike Information Criterion (AIC)
+   - Considered additional predictors like Sport and interaction terms
+   - Employed bidirectional selection to identify the most parsimonious model
+
+### Model Evaluation
+
+We assessed model performance using multiple metrics:
+
+- Root Mean Square Error (RMSE)
+- Accuracy
+- Receiver Operating Characteristic (ROC) Curve
+- Area Under the ROC Curve (AUC)
 
 ## Results
 
+### Model Performance Comparison
+
+Our analysis revealed differences among the three models:
+
+(Include table for RMSE and accuracy for each of the 3 models)
+(Include ROC curve)
+
+The ROC curve visualizes the trade-off between true positive rate and false positive rate across different classification thresholds. From our plot, we can observe:
+
+- The Stepwise AIC model (green) appears to demonstrate the most favorable performance
+- Interaction model (red) shows moderate predictive capability
+- Basic model (blue) exhibits the most limited discriminative power
+
+### Selected Model
+
+The Stepwise AIC model emerged as our preferred approach, incorporating:
+- Height
+- Weight
+- Age
+- Sport (as a factor)
+- Interaction terms between Weight:Age and Height:Age
+
 ## Discussion
+
+Our analysis suggests that predicting Olympic medal achievement is a task influenced by multiple interrelated factors. Physical attributes like height and weight play a role, and contextual variables like the sport help provide a slightly better understanding.
+
+Key insights:
+- Physical attributes (height, weight, age) alone are sufficient to predict medal success
+- Context of sport and interaction effects between age and physical characteristics help improve accuracy
+
 
 ## Appendix
 
-The olympic dataset can be found here: 
+### Analysis Contributors
+- Aadi Bhandary, Alvin Do, Milan Patel
