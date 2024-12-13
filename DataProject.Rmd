@@ -33,17 +33,32 @@ We began by preprocessing the Olympic Athletes Events dataset with several key s
 
 ### Modeling Approach
 
-We developed three logistic regression models to predict medal achievement:
+In order to accurately test the three hypotheses we developed, we must first establish a standard that the three models can be compared to. The first is accuracy and the second is RMSE.
+
+Below is the formula for Accuracy:
+$Accuracy = \frac{\sum_{i = 1}^{1000}Correct}{\sum_{i = 1}^{1000}Test Length}$
+
+Below is the formula for RMSE (where i is one of 1000 iterations:
+$RMSE_i = \sqrt{\sum_{j = 1}^{Test Length}\frac{(\hat{y}-y)^2}{Test Length}}$
+
+This dataset required additional preprocessing as we wish for more “modern” data to be included, as the demographics and physical form of athletes may change drastically across a century. 
+
+Furthermore the results section will include a ROC curve to account for the true positive rate as well as the false positive rate. This is because the number of medalists is a substantially small fraction of the number of participants within a sport. 
+
 
 1. **Basic Model**: 
    - Predictors: Height, Weight, Age
    - Simple linear relationship with medal probability
 
-2. **Interaction Model**: 
+3. **Basic Logistic Model**: 
    - Predictors: Height * Weight + Age
    - Explored potential interactive effects between physical attributes
 
-3. **Stepwise AIC Model**: 
+3. **Interaction Model**: 
+   - Predictors: Height * Weight + Age
+   - Explored potential interactive effects between physical attributes
+
+4. **Stepwise AIC Model**: 
    - Used automated model selection with Akaike Information Criterion (AIC)
    - Considered additional predictors like Sport and interaction terms
    - Employed bidirectional selection to identify the most parsimonious model
