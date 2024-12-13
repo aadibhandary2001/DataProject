@@ -1,0 +1,160 @@
+---
+title: 'Final Data Analysis Project'
+author: "STAT 420, Fall 2024, Sports Ball"
+date: ''
+output:
+  html_document:
+    theme: readable
+    toc: yes
+  pdf_document:
+    toc: yes
+urlcolor: cyan
+---
+
+***
+
+# Introduction
+
+This project explores data from the Summer Olympic Games to understand what factors best predict an athlete's likelihood of earning a medal. The data originates from the [Kaggle Olympic dataset](https://www.kaggle.com/datasets/heesoo37/120-years-of-olympic-history-athletes-and-results?resource=download) and consists of information on athletes, their demographics, physical attributes, participation history, and medal outcomes across all recorded Olympic Games.
+
+For this analysis, we focus on male athletes who competed in Summer Olympic events from 2004 onwards. Variables of interest include:
+
+- **Age**, **Height**, and **Weight:** Physical attributes hypothesized to influence performance
+- **Podium:** A binary variable indicating whether the athlete earned a medal (1) or not (0).
+
+The primary goal is to build a statistical model that predicts the probability of earning a medal based on physical characteristics. This analysis could provide insights for sports scientists, coaches, or aspiring athletes aiming to optimize performance.
+
+***
+
+# Methods
+
+## Linear Model
+
+### Data Preparation
+
+The dataset was filtered to include only male athletes from Summer Games in or after 2004. Rows with missing values for `Age`, `Height`, and `Weight` were excluded.
+
+A binary variable `Podium` was created to represent medal-winning outcomes, with 1 indicating a medal and 0 otherwise.
+
+```{r, message=FALSE, echo=FALSE}
+library(readr)
+library(caret)
+
+dat = read_csv("./athlete_events.csv")
+
+summer_games_data = dat[dat["Season"] == "Summer",]
+summer_games_data = summer_games_data[summer_games_data["Sex"] == "M",]
+summer_games_data = summer_games_data[summer_games_data["Year"] >= 2004,]
+summer_games_data = summer_games_data[!is.na(summer_games_data$Height),]
+summer_games_data = summer_games_data[!is.na(summer_games_data$Weight),]
+summer_games_data = summer_games_data[!is.na(summer_games_data$Age),]
+summer_games_data$Podium = ifelse(is.na(summer_games_data$Medal), 0, 1)
+
+str(summer_games_data)
+```
+
+### Modeling Approach
+
+First, a linear regression model was used to predict `Podium` using Age, Height, and Weight as predictors.
+
+The data was split into training (80%) and testing (20%) sets for validation.
+
+Additional metrics were computed:
+
+- **Train RMSE:** Evaluates model performance on the training set.
+- **Adjusted $R^2$:** Measures how well the model explains the variability of the target variable, accounting for the number of predictors.
+- **Test RMSE and Accuracy**
+
+### Model Assumption Testing
+
+- **Residual Normality:** Checked using a Q-Q plot and Shapiro-Wilk test for residuals.
+- **Linearity:** Assessed by plotting residuals vs. predicted probabilities
+- **Homoscedasticity:** Examined through a residuals plot
+
+***
+
+### Results
+
+#### Intermediate Results
+
+```{r, echo = FALSE}
+# Split into training and testing sets
+set.seed(06141999)
+train_index = createDataPartition(summer_games_data$Podium, p = 0.8, list = FALSE)
+train_data = summer_games_data[train_index, ]
+test_data = summer_games_data[-train_index, ]
+
+# Fit linear regression model
+linear_model = lm(Podium ~ Age + Height + Weight, data = train_data)
+
+# Training RMSE
+train_data$predicted_proba = predict(linear_model, newdata = train_data)
+train_rmse = sqrt(mean((train_data$Podium - train_data$predicted_proba)^2))
+paste0("Train RMSE: ", train_rmse)
+
+
+# Adjusted R^2
+adjusted_r2 = summary(linear_model)$adj.r.squared
+paste0("Linear Model Adjusted R^2: ", adjusted_r2)
+
+# Testing RMSE and Accuracy
+test_data$predicted_proba = predict(linear_model, newdata = test_data)
+test_data$predicted_proba = pmin(pmax(test_data$predicted_proba, 0), 1)
+test_data$predicted_class = ifelse(test_data$predicted_proba > 0.5, 1, 0)
+test_rmse = sqrt(mean((test_data$Podium - test_data$predicted_proba)^2))
+test_accuracy = mean(test_data$predicted_class == test_data$Podium)
+
+paste0("Test RMSE: ", test_rmse)
+paste0("Test Accuracy: ", test_accuracy)
+
+# Residual Analysis
+test_data$residuals = test_data$Podium - test_data$predicted_proba
+```
+
+#### Linear Model Assumptions
+
+```{r, echo=FALSE}
+# Shapiro-Wilk test for normality of residuals
+shapiro_test = shapiro.test(test_data[sample(nrow(test_data), 5000), ]$residuals)
+shapiro_test
+
+# Q-Q plot
+qqnorm(test_data$residuals)
+qqline(test_data$residuals, col = "red")
+
+# Residuals vs Fitted values plot
+ggplot(test_data, aes(x = predicted_proba, y = residuals)) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs Predicted Values", x = "Predicted Probability", y = "Residuals")
+```
+
+#### Possible Fixes?
+
+First we find the Cook's Distance of each observation that is considered large. A Cook's Distance is considered large if $D_i > {4\over n}$.
+
+We remove those values from our training data and create a similar linear model.
+
+```{r, echo=FALSE}
+lin_mod_cd = cooks.distance(linear_model)
+
+lin_mod_fix = lm(Podium ~ Age + Height + Weight,
+                 data = train_data, 
+                 subset = lin_mod_cd < 4 / length(lin_mod_cd))
+qqnorm(resid(lin_mod_fix), col = "grey")
+qqline(resid(lin_mod_fix), col = "dodgerblue", lwd = 2)
+```
+
+```{r, echo=FALSE}
+shapiro.test(sample(resid(lin_mod_fix), 5000))
+```
+
+```{r, echo=FALSE}
+# Residuals vs Fitted values plot
+plot(fitted(lin_mod_fix), resid(lin_mod_fix), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residual",
+     main = "Residuals vs Fitted")
+abline(h = 0, col = "darkorange", lwd = 2)
+```
+
+After attempting the fixes, we still see our assumptions are still violated. A linear model may not be the best choice, so a logistic model may show better results.
