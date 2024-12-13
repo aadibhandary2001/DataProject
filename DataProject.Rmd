@@ -76,6 +76,23 @@ We assessed model performance using multiple metrics:
 
 ### Model Performance Comparison
 
+```{r}
+#Basic Model
+basic_model = glm(Podium ~ Height + Weight + Age, data = train_data, family = "binomial")
+
+#Linear model
+linear_model = lm(Podium ~ Age + Height + Weight, data = train_data)
+
+#Interaction Model
+interaction_model = glm(Podium ~ Height * Weight + Age, data = train_data, family = "binomial")
+
+#Stepwise AIC
+step_model = step(glm(Podium ~ 1,  #initial search starts from intercept
+                      data = train_data, family = "binomial"), 
+                      scope = ~ Height + Weight + Age + factor(Year) + factor(Sport) + Weight:Age + Height:Age, 
+                      direction = "both", trace=FALSE)
+```
+
 Our analysis revealed differences among the three models:
 
 (Include table for RMSE and accuracy for each of the 3 models)
