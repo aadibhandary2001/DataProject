@@ -1,0 +1,41 @@
+---
+title: "DataProject"
+author: "Aadi"
+date: "2024-12-04"
+output: html_document
+---
+
+
+## Introduction
+
+This work seeks to discuss what predictors best predict the odds of earning a medal in the Olympic games. Generally viewers of the Olympics see nations and athletes attain repeated victories in the sports of their preference, but we seek to answer: "What makes these Olympic games feel so predictable?". Are victories delegated by some invisible hand or are there ways we can discern victorious athletes from less successful athletes? In this work we will explore three models: a basic linear model, a logistic regression model based on biological factors, and a backwards AIC model.
+
+The dataset we will be using is the Olympic dataset 
+## Methods
+In order to accurately test the three hypothesis we developed, we must first establish a standard that the three models can be compared to. The first is accuracy. Across 1000 simulations, we will attain the accuracy of each model as well as the RMSE for each simulation.
+
+Below is the formula for Accuracy:
+$Accuracy = \frac{\sum_{i = 1}^{1000}Correct}{\sum_{i = 1}^{1000}Test Length}$
+
+Below is the formula for RMSE (where i is one of 1000 iterations:
+$RMSE_i = \sqrt{\sum_{j = 1}^{Test Length}\frac{(\hat{y}-y)^2}{Test Length}}$
+
+Since this olympic dataset is large 
+## Section 1: The Linear Model (Alvin)
+
+## Section 2: The Logistic Regression (Aadi)
+The core hypothesis behind this model is that the bigger you are, the better. A hypothesis of this nature is simple to assess as it has three predictors: Age, Height, and Weight. Since we are predicting "odds", I found a logistic regression to be the most reasonable. The intuition I hope to actualize is that generally younger, taller, and heavier athletes are likely to win. 
+
+```{r}
+
+```
+
+## Section 3: Backwards AIC (Milan)
+
+## Results
+
+## Discussion
+
+## Appendix
+
+The olympic dataset can be found here: 
