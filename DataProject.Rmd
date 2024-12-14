@@ -31,6 +31,19 @@ We began by preprocessing the Olympic Athletes Events dataset with several key s
 3. **Data Splitting**:
    - Utilized an 80-20 train-test split for model development and validation
 
+The code below shows the data cleansing process we used for our analysis.
+```{r}
+library(readr)
+dat = read.csv("./athlete_events.csv")
+summer_games_data <- dat[dat["Season"] == "Summer",]
+summer_games_data <- summer_games_data[summer_games_data["Sex"] == "M",]
+summer_games_data <- summer_games_data[summer_games_data["Year"] >= 2004,]
+summer_games_data = summer_games_data[!is.na(summer_games_data$Height),]
+summer_games_data = summer_games_data[!is.na(summer_games_data$Weight),]
+summer_games_data = summer_games_data[!is.na(summer_games_data$Age),]
+summer_games_data$Podium = ifelse(is.na(summer_games_data$Medal), 0, 1)
+head(summer_games_data)
+```
 ### Modeling Approach
 
 In order to accurately test the three hypotheses we developed, we must first establish a standard that the three models can be compared to. The first is accuracy and the second is RMSE.
@@ -43,7 +56,7 @@ $RMSE_i = \sqrt{\sum_{j = 1}^{Test Length}\frac{(\hat{y}-y)^2}{Test Length}}$
 
 This dataset required additional preprocessing as we wish for more “modern” data to be included, as the demographics and physical form of athletes may change drastically across a century. 
 
-Furthermore the results section will include a ROC curve to account for the true positive rate as well as the false positive rate. This is because the number of medalists is a substantially small fraction of the number of participants within a sport. 
+Furthermore the results section will include a ROC curve to account for the true positive rate as well as the false positive rate. This is because the number of medalists is a substantially small fraction of the number of participants within a sport. For our analysis, achieving a podium position (Bronze, Silver, and Gold) will be the "positive" variable. 
 
 
 1. **Basic Model**: 
@@ -51,7 +64,7 @@ Furthermore the results section will include a ROC curve to account for the true
    - Simple linear relationship with medal probability
 
 3. **Basic Logistic Model**: 
-   - Predictors: Height * Weight + Age
+   - Predictors: Height + Weight + Age
    - Explored potential interactive effects between physical attributes
 
 3. **Interaction Model**: 
@@ -72,26 +85,115 @@ We assessed model performance using multiple metrics:
 - Receiver Operating Characteristic (ROC) Curve
 - Area Under the ROC Curve (AUC)
 
+
+```{r, echo=FALSE}
+#Basic Linear model predictions
+set.seed(07112001)
+iterations = 1000
+total_correct_base_linear = rep(0,iterations)
+total_guessed_base_linear = rep(0,iterations)
+tst_rmse_base_linear = rep(0,iterations)
+
+for(i in 1:iterations){
+  #Train/Test split dataset for current iteration
+  smp_size <- floor(0.8 * nrow(summer_games_data))
+  trn_idx <- sample(seq_len(nrow(summer_games_data)), size = smp_size)
+  trn_data <- summer_games_data[trn_idx,]
+  tst_data <- summer_games_data[-trn_idx,]
+  
+  base_linear <- lm(Podium ~ Height + Weight + Age, data = trn_data)
+  
+  base_preds <- unname(predict(base_linear,tst_data))
+  base_preds <- ifelse(base_preds > 0,1,0) #We use the sign of a basic linear regresion model to determine 0 or 1.
+  tst_labels <- tst_data$Podium
+  for(j in 1:length(tst_labels)){
+    if(tst_labels[j] == base_preds[j]){
+      total_correct_base_linear[i] = total_correct_base_linear[i] + 1
+    }
+  }
+  total_guessed_base_linear[i] = length(tst_labels)
+  tst_rmse_base_linear[i] <- sqrt(mean( (tst_data$Podium-base_preds)^2 ))
+}
+rmse_mean_base_linear <- mean(tst_rmse_base_linear)
+```
+
+```{r, echo=FALSE}
+#Basic Logistic Regression
+set.seed(07112001)
+iterations = 1000
+total_correct_base_log = rep(0,iterations)
+total_guessed_base_log = rep(0,iterations)
+tst_rmse_base_log = rep(0,iterations)
+
+for(i in 1:iterations){
+  #Train/Test split dataset for current iteration
+  smp_size <- floor(0.8 * nrow(summer_games_data))
+  trn_idx <- sample(seq_len(nrow(summer_games_data)), size = smp_size)
+  trn_data <- summer_games_data[trn_idx,]
+  tst_data <- summer_games_data[-trn_idx,]
+  
+  base_log_reg <- glm(Podium ~ Age + Height + Weight, data = trn_data)
+  
+  base_preds <- unname(predict(base_log_reg,tst_data))
+  base_preds <- ifelse(base_preds > 0.5,1,0)
+  tst_labels <- tst_data$Podium
+  for(j in 1:length(tst_labels)){
+    if(tst_labels[j] == base_preds[j]){
+      total_correct_base_log[i] = total_correct_base_log[i] + 1
+    }
+  }
+  total_guessed_base_log[i] = length(tst_labels)
+  tst_rmse_base_log[i] <- sqrt(mean( (tst_data$Podium-base_preds)^2 ))
+}
+rmse_mean_base_log <- mean(tst_rmse_base_log)
+```
+
+```{r, echo=FALSE}
+#Interaction Model
+set.seed(07112001)
+iterations = 1000
+total_correct_base_interaction = rep(0,iterations)
+total_guessed_base_interaction = rep(0,iterations)
+tst_rmse_base_interaction = rep(0,iterations)
+
+for(i in 1:iterations){
+  #Train/Test split dataset for current iteration
+  smp_size <- floor(0.8 * nrow(summer_games_data))
+  trn_idx <- sample(seq_len(nrow(summer_games_data)), size = smp_size)
+  trn_data <- summer_games_data[trn_idx,]
+  tst_data <- summer_games_data[-trn_idx,]
+  
+  base_interaction <- glm(Podium ~ Height * Weight + Age, data = trn_data)
+  
+  base_preds <- unname(predict(base_interaction,tst_data))
+  base_preds <- ifelse(base_preds > 0.5,1,0)
+  tst_labels <- tst_data$Podium
+  for(j in 1:length(tst_labels)){
+    if(tst_labels[j] == base_preds[j]){
+      total_correct_base_interaction[i] = total_correct_base_interaction[i] + 1
+    }
+  }
+  total_guessed_base_interaction[i] = length(tst_labels)
+  tst_rmse_base_interaction[i] <- sqrt(mean( (tst_data$Podium-base_preds)^2 ))
+}
+rmse_mean_interaction <- mean(tst_rmse_base_interaction)
+```
+
 ## Results
+
+Below are plots and tables that show the performance of our models.
+
+```{r, echo=FALSE}
+par(mfrow = c(1,4))
+hist(tst_rmse_base_linear, col='red',prob=TRUE,main = "Naive Linear",xlab = "RMSE")
+hist(tst_rmse_base_log, col='green',prob=TRUE,main ="Logistic Regression",xlab = "RMSE")
+hist(tst_rmse_base_interaction, col='blue',prob=TRUE,main ="Logistic Interaction",xlab = "RMSE")
+```
 
 ### Model Performance Comparison
 
-```{r}
-#Basic Model
-basic_model = glm(Podium ~ Height + Weight + Age, data = train_data, family = "binomial")
 
-#Linear model
-linear_model = lm(Podium ~ Age + Height + Weight, data = train_data)
 
-#Interaction Model
-interaction_model = glm(Podium ~ Height * Weight + Age, data = train_data, family = "binomial")
-
-#Stepwise AIC
-step_model = step(glm(Podium ~ 1,  #initial search starts from intercept
-                      data = train_data, family = "binomial"), 
-                      scope = ~ Height + Weight + Age + factor(Year) + factor(Sport) + Weight:Age + Height:Age, 
-                      direction = "both", trace=FALSE)
-```
 
 Our analysis revealed differences among the three models:
 
@@ -114,6 +216,8 @@ The Stepwise AIC model emerged as our preferred approach, incorporating:
 - Interaction terms between Weight:Age and Height:Age
 
 ## Discussion
+
+Within the results section we can see that all four of our models attain an accuracy around 85%. However, this is very misleading per sport there may only exist 3 rows where individuals manage to podium.The naive linear regression model had the worst RMSE among the four models we simulated for this problem, attaining an average RMSE of 0.9252. The performance of the basic logistic regression and interaction models are almost identical based on the histograms above, however the means of each are slightly different: the basic logistic regression model had an average RMSE of 0.3794 and the interaction model had an RMSE of 0.3796, which argue against the interaction between Height and Weight. 
 
 Our analysis suggests that predicting Olympic medal achievement is a task influenced by multiple interrelated factors. Physical attributes like height and weight play a role, and contextual variables like the sport help provide a slightly better understanding.
 

@@ -9,11 +9,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Aadi" />
+<meta name="author" content="Aadi Bhandary, Alvin Do, Milan Patel" />
 
-<meta name="date" content="2024-12-04" />
+<meta name="date" content="2024-12-12" />
 
-<title>DataProject</title>
+<title>Olympic Athlete Medal Prediction: A Statistical Analysis</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -350,58 +350,207 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">DataProject</h1>
-<h4 class="author">Aadi</h4>
-<h4 class="date">2024-12-04</h4>
+<h1 class="title toc-ignore">Olympic Athlete Medal Prediction: A
+Statistical Analysis</h1>
+<h4 class="author">Aadi Bhandary, Alvin Do, Milan Patel</h4>
+<h4 class="date">12/12/2024</h4>
 
 </div>
 
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>This work seeks to discuss what predictors best predict the odds of
-earning a medal in the Olympic games. Generally viewers of the Olympics
-see nations and athletes attain repeated victories in the sports of
-their preference, but we seek to answer: “What makes these Olympic games
-feel so predictable?”. Are victories delegated by some invisible hand or
-are there ways we can discern victorious athletes from less successful
-athletes? In this work we will explore three models: a basic linear
-model, a logistic regression model based on biological factors, and a
-backwards AIC model.</p>
-<p>The dataset we will be using is the Olympic dataset ## Methods In
-order to accurately test the three hypothesis we developed, we must
-first establish a standard that the three models can be compared to. The
-first is accuracy. Across 1000 simulations, we will attain the accuracy
-of each model as well as the RMSE for each simulation.</p>
+<p>Athletes from around the world compete at the highest levels at the
+Olympic Games. This analysis uses a comprehensive dataset spanning 120
+years of Olympic history to explore a fundamental question: What factors
+contribute to an athlete winning a medal?</p>
+<p>Our Athlete Events dataset, provides a repository of information
+about Olympic participants, including their physical characteristics,
+age, and sport. By focusing on male athletes in Summer Olympic Games
+from 2004 onwards, we aim to develop a predictive model that can help
+understand the key determinants of Olympic success.</p>
+<p>The primary goal of this research is to construct a robust
+statistical model that can predict whether an athlete is likely to win a
+medal based on attributes such as height, weight, and age. This model
+could provide valuable insights for athletes and coaches in
+understanding the physiological factors that might influence Olympic
+performance.</p>
+</div>
+<div id="methods" class="section level2">
+<h2>Methods</h2>
+<div id="data-preparation" class="section level3">
+<h3>Data Preparation</h3>
+<p>We began by preprocessing the Olympic Athletes Events dataset with
+several key steps:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Data Filtering</strong>:
+<ul>
+<li>Selected only Summer Olympic Games</li>
+<li>Focused exclusively on male athletes</li>
+<li>Restricted data to games from 2004 onwards</li>
+</ul></li>
+<li><strong>Data Cleaning</strong>:
+<ul>
+<li>Removed entries with missing height, weight, or age data</li>
+<li>Created a binary “Podium” variable (1 for medal winners, 0 for
+non-medalists)</li>
+</ul></li>
+<li><strong>Data Splitting</strong>:
+<ul>
+<li>Utilized an 80-20 train-test split for model development and
+validation</li>
+</ul></li>
+</ol>
+<p>The code below shows the data cleansing process we used for our
+analysis.</p>
+<pre class="r"><code>library(readr)
+dat = read.csv(&quot;./athlete_events.csv&quot;)
+summer_games_data &lt;- dat[dat[&quot;Season&quot;] == &quot;Summer&quot;,]
+summer_games_data &lt;- summer_games_data[summer_games_data[&quot;Sex&quot;] == &quot;M&quot;,]
+summer_games_data &lt;- summer_games_data[summer_games_data[&quot;Year&quot;] &gt;= 2004,]
+summer_games_data = summer_games_data[!is.na(summer_games_data$Height),]
+summer_games_data = summer_games_data[!is.na(summer_games_data$Weight),]
+summer_games_data = summer_games_data[!is.na(summer_games_data$Age),]
+summer_games_data$Podium = ifelse(is.na(summer_games_data$Medal), 0, 1)
+head(summer_games_data)</code></pre>
+<pre><code>##     ID                               Name Sex Age Height Weight   Team NOC
+## 2    2                           A Lamusi   M  23    170     60  China CHN
+## 83  23                        Fritz Aanes   M  26    187     89 Norway NOR
+## 99  34 Jamale (Djamel-) Aarrass (Ahrass-)   M  30    187     76 France FRA
+## 140 51                  Nstor Abad Sanjun   M  23    167     64  Spain ESP
+## 141 51                  Nstor Abad Sanjun   M  23    167     64  Spain ESP
+## 142 51                  Nstor Abad Sanjun   M  23    167     64  Spain ESP
+##           Games Year Season           City      Sport
+## 2   2012 Summer 2012 Summer         London       Judo
+## 83  2004 Summer 2004 Summer         Athina  Wrestling
+## 99  2012 Summer 2012 Summer         London  Athletics
+## 140 2016 Summer 2016 Summer Rio de Janeiro Gymnastics
+## 141 2016 Summer 2016 Summer Rio de Janeiro Gymnastics
+## 142 2016 Summer 2016 Summer Rio de Janeiro Gymnastics
+##                                              Event Medal Podium
+## 2                     Judo Men&#39;s Extra-Lightweight  &lt;NA&gt;      0
+## 83  Wrestling Men&#39;s Light-Heavyweight, Greco-Roman  &lt;NA&gt;      0
+## 99                    Athletics Men&#39;s 1,500 metres  &lt;NA&gt;      0
+## 140         Gymnastics Men&#39;s Individual All-Around  &lt;NA&gt;      0
+## 141                Gymnastics Men&#39;s Floor Exercise  &lt;NA&gt;      0
+## 142                 Gymnastics Men&#39;s Parallel Bars  &lt;NA&gt;      0</code></pre>
+</div>
+<div id="modeling-approach" class="section level3">
+<h3>Modeling Approach</h3>
+<p>In order to accurately test the three hypotheses we developed, we
+must first establish a standard that the three models can be compared
+to. The first is accuracy and the second is RMSE.</p>
 <p>Below is the formula for Accuracy: <span class="math inline">\(Accuracy = \frac{\sum_{i =
 1}^{1000}Correct}{\sum_{i = 1}^{1000}Test Length}\)</span></p>
 <p>Below is the formula for RMSE (where i is one of 1000 iterations:
 <span class="math inline">\(RMSE_i = \sqrt{\sum_{j = 1}^{Test
 Length}\frac{(\hat{y}-y)^2}{Test Length}}\)</span></p>
-<p>Since this olympic dataset is large ## Section 1: The Linear Model
-(Alvin)</p>
+<p>This dataset required additional preprocessing as we wish for more
+“modern” data to be included, as the demographics and physical form of
+athletes may change drastically across a century.</p>
+<p>Furthermore the results section will include a ROC curve to account
+for the true positive rate as well as the false positive rate. This is
+because the number of medalists is a substantially small fraction of the
+number of participants within a sport. For our analysis, achieving a
+podium position (Bronze, Silver, and Gold) will be the “positive”
+variable.</p>
+<ol style="list-style-type: decimal">
+<li><strong>Basic Model</strong>:
+<ul>
+<li>Predictors: Height, Weight, Age</li>
+<li>Simple linear relationship with medal probability</li>
+</ul></li>
+<li><strong>Basic Logistic Model</strong>:
+<ul>
+<li>Predictors: Height + Weight + Age</li>
+<li>Explored potential interactive effects between physical
+attributes</li>
+</ul></li>
+<li><strong>Interaction Model</strong>:
+<ul>
+<li>Predictors: Height * Weight + Age</li>
+<li>Explored potential interactive effects between physical
+attributes</li>
+</ul></li>
+<li><strong>Stepwise AIC Model</strong>:
+<ul>
+<li>Used automated model selection with Akaike Information Criterion
+(AIC)</li>
+<li>Considered additional predictors like Sport and interaction
+terms</li>
+<li>Employed bidirectional selection to identify the most parsimonious
+model</li>
+</ul></li>
+</ol>
 </div>
-<div id="section-2-the-logistic-regression-aadi" class="section level2">
-<h2>Section 2: The Logistic Regression (Aadi)</h2>
-<p>The core hypothesis behind this model is that the bigger you are, the
-better. A hypothesis of this nature is simple to assess as it has three
-predictors: Age, Height, and Weight. Since we are predicting “odds”, I
-found a logistic regression to be the most reasonable. The intuition I
-hope to actualize is that generally younger, taller, and heavier
-athletes are likely to win.</p>
+<div id="model-evaluation" class="section level3">
+<h3>Model Evaluation</h3>
+<p>We assessed model performance using multiple metrics:</p>
+<ul>
+<li>Root Mean Square Error (RMSE)</li>
+<li>Accuracy</li>
+<li>Receiver Operating Characteristic (ROC) Curve</li>
+<li>Area Under the ROC Curve (AUC)</li>
+</ul>
 </div>
-<div id="section-3-backwards-aic-milan" class="section level2">
-<h2>Section 3: Backwards AIC (Milan)</h2>
 </div>
 <div id="results" class="section level2">
 <h2>Results</h2>
+<p>Below are plots and tables that show the performance of our
+models.</p>
+<p><img src="data:image/png;base64,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" width="672" /></p>
+<div id="model-performance-comparison" class="section level3">
+<h3>Model Performance Comparison</h3>
+<p>Our analysis revealed differences among the three models:</p>
+<p>(Include table for RMSE and accuracy for each of the 3 models)
+(Include ROC curve)</p>
+<p>The ROC curve visualizes the trade-off between true positive rate and
+false positive rate across different classification thresholds. From our
+plot, we can observe:</p>
+<ul>
+<li>The Stepwise AIC model (green) appears to demonstrate the most
+favorable performance</li>
+<li>Interaction model (red) shows moderate predictive capability</li>
+<li>Basic model (blue) exhibits the most limited discriminative
+power</li>
+</ul>
+</div>
+<div id="selected-model" class="section level3">
+<h3>Selected Model</h3>
+<p>The Stepwise AIC model emerged as our preferred approach,
+incorporating: - Height - Weight - Age - Sport (as a factor) -
+Interaction terms between Weight:Age and Height:Age</p>
+</div>
 </div>
 <div id="discussion" class="section level2">
 <h2>Discussion</h2>
+<p>Within the results section we can see that all four of our models
+attain an accuracy around 85%. However, this is very misleading per
+sport there may only exist 3 rows where individuals manage to podium.The
+naive linear regression model had the worst RMSE among the four models
+we simulated for this problem, attaining an average RMSE of 0.9252. The
+performance of the basic logistic regression and interaction models are
+almost identical based on the histograms above, however the means of
+each are slightly different: the basic logistic regression model had an
+average RMSE of 0.3794 and the interaction model had an RMSE of 0.3796,
+which argue against the interaction between Height and Weight.</p>
+<p>Our analysis suggests that predicting Olympic medal achievement is a
+task influenced by multiple interrelated factors. Physical attributes
+like height and weight play a role, and contextual variables like the
+sport help provide a slightly better understanding.</p>
+<p>Key insights: - Physical attributes (height, weight, age) alone are
+sufficient to predict medal success - Context of sport and interaction
+effects between age and physical characteristics help improve
+accuracy</p>
 </div>
 <div id="appendix" class="section level2">
 <h2>Appendix</h2>
-<p>The olympic dataset can be found here:</p>
+<div id="analysis-contributors" class="section level3">
+<h3>Analysis Contributors</h3>
+<ul>
+<li>Aadi Bhandary, Alvin Do, Milan Patel</li>
+</ul>
+</div>
 </div>
 
 
