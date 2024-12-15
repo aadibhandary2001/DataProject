@@ -265,7 +265,7 @@ rmse_mean_interaction <- mean(tst_rmse_base_interaction)
 Below are plots and tables that show the performance of our models.
 
 ```{r, echo=FALSE}
-par(mfrow = c(1,4))
+par(mfrow = c(1,3))
 hist(tst_rmse_base_linear, col='red',prob=TRUE,main = "Naive Linear",xlab = "RMSE")
 hist(tst_rmse_base_log, col='green',prob=TRUE,main ="Logistic Regression",xlab = "RMSE")
 hist(tst_rmse_base_interaction, col='blue',prob=TRUE,main ="Logistic Interaction",xlab = "RMSE")
