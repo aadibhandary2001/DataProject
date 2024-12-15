@@ -1,17 +1,22 @@
 ---
 title: "Olympic Athlete Medal Prediction: A Statistical Analysis"
 author: "Aadi Bhandary, Alvin Do, Milan Patel"
-date: "12/12/2024"
+date: "12/15/2024"
 output: html_document
 ---
 
+***
+
 ## Introduction
 
-Athletes from around the world compete at the highest levels at the Olympic Games. This analysis uses a comprehensive dataset spanning 120 years of Olympic history to explore a fundamental question: What factors contribute to an athlete winning a medal?
+Athletes from around the world compete at the highest levels at the Olympic Games. This analysis uses a comprehensive dataset spanning 120 years of Olympic history to explore a fundamental question: **What factors contribute to an athlete winning a medal?**
 
-Our Athlete Events dataset, provides a repository of information about Olympic participants, including their physical characteristics, age, and sport. By focusing on male athletes in Summer Olympic Games from 2004 onwards, we aim to develop a predictive model that can help understand the key determinants of Olympic success.
+Our Athlete Events dataset originates from the [Kaggle Olympic dataset](https://www.kaggle.com/datasets/heesoo37/120-years-of-olympic-history-athletes-and-results?resource=download)
+and provides a repository of information about Olympic participants, including their physical characteristics, age, and sport. By focusing on male athletes in Summer Olympic Games from 2004 onwards, we aim to develop a predictive model that can help understand the key determinants of Olympic success.
 
 The primary goal of this research is to construct a robust statistical model that can predict whether an athlete is likely to win a medal based on attributes such as height, weight, and age. This model could provide valuable insights for athletes and coaches in understanding the physiological factors that might influence Olympic performance.
+
+***
 
 ## Methods
 
@@ -22,7 +27,7 @@ We began by preprocessing the Olympic Athletes Events dataset with several key s
 1. **Data Filtering**:
    - Selected only Summer Olympic Games
    - Focused exclusively on male athletes
-   - Restricted data to games from 2004 onwards
+   - Restricted data to games from 2004-onwards
 
 2. **Data Cleaning**:
    - Removed entries with missing height, weight, or age data
@@ -35,9 +40,9 @@ The code below shows the data cleansing process we used for our analysis.
 ```{r,eval=FALSE}
 library(readr)
 dat = read.csv("./athlete_events.csv")
-summer_games_data <- dat[dat["Season"] == "Summer",]
-summer_games_data <- summer_games_data[summer_games_data["Sex"] == "M",]
-summer_games_data <- summer_games_data[summer_games_data["Year"] >= 2004,]
+summer_games_data = dat[dat["Season"] == "Summer",]
+summer_games_data = summer_games_data[summer_games_data["Sex"] == "M",]
+summer_games_data = summer_games_data[summer_games_data["Year"] >= 2004,]
 summer_games_data = summer_games_data[!is.na(summer_games_data$Height),]
 summer_games_data = summer_games_data[!is.na(summer_games_data$Weight),]
 summer_games_data = summer_games_data[!is.na(summer_games_data$Age),]
@@ -49,9 +54,9 @@ library(readr)
 library(dplyr)
 library(tidyr)
 dat = read.csv("./athlete_events.csv")
-summer_games_data <- dat[dat["Season"] == "Summer",]
-summer_games_data <- summer_games_data[summer_games_data["Sex"] == "M",]
-summer_games_data <- summer_games_data[summer_games_data["Year"] >= 2004,]
+summer_games_data = dat[dat["Season"] == "Summer",]
+summer_games_data = summer_games_data[summer_games_data["Sex"] == "M",]
+summer_games_data = summer_games_data[summer_games_data["Year"] >= 2004,]
 summer_games_data = summer_games_data[!is.na(summer_games_data$Height),]
 summer_games_data = summer_games_data[!is.na(summer_games_data$Weight),]
 summer_games_data = summer_games_data[!is.na(summer_games_data$Age),]
@@ -74,7 +79,7 @@ curve(dnorm(x, mean=mean(female$Height), sd=sd(female$Height)),
       col="orange", lwd=2, add=TRUE, yaxt="n")
 ```
 
-We could overcome this bimodality by including sex as a categorical predictor, however our goal is to abstract a general, functional, relationship between our predictors and medal odds. Including sex adds no new meaning if it just shifts the curve with the same linear relationships.
+We could overcome this bimodality by including sex as a categorical predictor, however our goal is to abstract a general functional relationship between our predictors and medal odds. Including sex adds no new meaning if it just shifts the curve with the same linear relationships.
 
 Another data cleansing item that we included was reducing the number of years.
 
@@ -85,10 +90,12 @@ no_na = no_na[!is.na(no_na$Weight),]
 no_na = no_na[!is.na(no_na$Age),]
 grouped_data = no_na %>% group_by(Year)  %>%
                   summarise(Nations = n_distinct(Team))
-barplot(Nations ~ Year, data = grouped_data)
+barplot(Nations ~ Year, data = grouped_data,
+        col = "dodgerblue",
+        main = "# of Nations Competing in the Olympics")
 ```
 
-The general trend is that as the years go on, the number of participating nations increases. You may notice that the plot above has a substantial number of dips in between the years sampled, however this can easily be explained by the winter games having a smaller number of participating nations in the games.
+The general trend is that as the years go on, the number of participating nations increases. You may notice that the plot above has a substantial number of dips in between the years sampled. This can easily be explained by the winter games having a smaller number of participating nations in the games.
 
 Below is a plot that of the number of participating athletes split by the winter and summer games over the years.
 ```{r, echo=FALSE}
@@ -106,27 +113,46 @@ grouped_winter = winter_rows %>% group_by(Year)  %>%
                   summarise(Athletes = n_distinct(Name))
 
 par(mfrow = c(1,2))
-barplot(Athletes ~ Year, data = grouped_summer,col = "orange")
-barplot(Athletes ~ Year, data = grouped_winter,col = "cyan")
+barplot(Athletes ~ Year, data = grouped_summer,
+        col = "orange", main = "# of Athletes in Summer Games")
+barplot(Athletes ~ Year, data = grouped_winter,
+        col = "cyan", main = "# of Athletes in Winter Games")
 ```
 
-As we can see, there is a substantially smaller number of winter games participants than there are summer games, but the general trend of increasing athlete participation holds true. Therefore it is in our interest to factor in the most recent years of data for our study since the rate of change in the number of athletes levels off in that time period. 
+As we can see, there is a substantially smaller number of winter games participants than there are summer games, but the general trend of increasing athlete participation holds true. Therefore, it is in our interest to factor in the most recent years of data for our study since the rate of change in the number of athletes levels off in that time period. 
 
-Lastly, there may be a significant bias tied to the nations of origin (In our initial data set: Team), which may be a noisy categorical predictor when trying to build a general predictor for podium odds. Below is a plot of the medals by nation.
+Lastly, there may be a significant bias tied to the nations of origin (the `Team` column in the dataset), which may be a noisy categorical predictor when trying to build a general predictor for podium odds. Below is a plot of the medals by nation.
 
 ```{r, echo=FALSE}
 no_na = dat[!is.na(dat$Height),]
 no_na = no_na[!is.na(no_na$Weight),]
 no_na = no_na[!is.na(no_na$Age),]
 no_na$Podium = ifelse(is.na(no_na$Medal), 0, 1)
+
 grouped_podium = no_na %>% group_by(Team)  %>%
                   summarise(Podiums = sum(Podium))
-barplot(Podiums ~ Team, data = grouped_podium,col = "gold")
+
+#barplot(Podiums ~ Team, data = grouped_podium, col = "gold")
+
+# Keep the original order and decide which team names to display
+grouped_podium = grouped_podium %>%
+  mutate(Label = ifelse(Podiums >= 0, 
+                        ifelse(nchar(Team) > 10, substr(Team, 1, 10), Team), 
+                        "")
+         )
+
+# Create barplot
+barplot(grouped_podium$Podiums, 
+        names.arg = grouped_podium$Label, 
+        col = "gold", 
+        las = 2, 
+        main = "Team Podiums",
+        cex.names = 0.7)
 ```
 
-Based on the plot above, it is apparent that larger and more developed countries (China and The United States) can be over represented in the podium variable. Although one can argue "being an American" increases your odds of achieving a medal, this makes for a poor conclusion and adds no value to creating a generalized predictor. Furthermore cleaning this column for noisy labels like "February" is difficult. 
+Based on the plot above, it is apparent that larger and more developed countries (China and The United States) can be over represented in the podium variable. Although one can argue "being an American" increases your odds of achieving a medal, this makes for a poor conclusion and adds no value to creating a generalized predictor. Furthermore, cleaning this column for noisy labels like "February" is difficult. 
 
-After data cleansing, our final bulk data set size is 29717 observations. Predictors: Sex, Year, and Team don't offer us the explanation we are seeking in our problem statement, hence we have decide to omit them. Our goal now is to figure out what is the relationship between basic biological predictors for predicting podium probability.
+After data cleansing, our final bulk data set size is 29,717 observations. Predictors: `Sex`, `Year`, and `Team` don't offer us the explanation we are seeking in our problem statement, hence we have decide to omit them. Our goal now is to figure out what is the relationship between basic biological predictors for predicting podium probability.
 
 ### Modeling Approach
 
@@ -138,7 +164,7 @@ $Accuracy = \frac{\sum_{i = 1}^{1000}Correct}{\sum_{i = 1}^{1000}Test Length}$
 Below is the formula for RMSE (where i is one of 1000 iterations:
 $RMSE_i = \sqrt{\sum_{j = 1}^{Test Length}\frac{(\hat{y}-y)^2}{Test Length}}$
 
-We will be testing three model configurations based on our basic biological predictors: Height, Weight, and Age.
+We will be testing three model configurations based on our basic biological predictors: `Height`, `Weight`, and `Age.`
 
 1. **Basic Model**: 
    - Predictors: Height, Weight, Age
@@ -178,26 +204,26 @@ tst_rmse_base_linear = rep(0,iterations)
 
 for(i in 1:iterations){
   #Train/Test split dataset for current iteration
-  smp_size <- floor(0.8 * nrow(summer_games_data))
-  trn_idx <- sample(seq_len(nrow(summer_games_data)), size = smp_size)
-  trn_data <- summer_games_data[trn_idx,]
-  tst_data <- summer_games_data[-trn_idx,]
+  smp_size = floor(0.8 * nrow(summer_games_data))
+  trn_idx = sample(seq_len(nrow(summer_games_data)), size = smp_size)
+  trn_data = summer_games_data[trn_idx,]
+  tst_data = summer_games_data[-trn_idx,]
   
-  base_linear <- lm(Podium ~ Height + Weight + Age, data = trn_data)
+  base_linear = lm(Podium ~ Height + Weight + Age, data = trn_data)
   
-  base_preds <- unname(predict(base_linear,tst_data))
-  base_preds <- ifelse(base_preds > 0,1,0) #We use the sign of a basic linear regresion model to determine 0 or 1.
-  tst_labels <- tst_data$Podium
+  base_preds = unname(predict(base_linear,tst_data))
+  base_preds = ifelse(base_preds > 0,1,0) #We use the sign of a basic linear regresion model to determine 0 or 1.
+  tst_labels = tst_data$Podium
   for(j in 1:length(tst_labels)){
     if(tst_labels[j] == base_preds[j]){
       total_correct_base_linear[i] = total_correct_base_linear[i] + 1
     }
   }
   total_guessed_base_linear[i] = length(tst_labels)
-  tst_rmse_base_linear[i] <- sqrt(mean( (tst_data$Podium-base_preds)^2 ))
+  tst_rmse_base_linear[i] = sqrt(mean( (tst_data$Podium-base_preds)^2 ))
 }
 average_acc_linear = sum(total_correct_base_linear) / sum(total_guessed_base_linear)
-rmse_mean_base_linear <- mean(tst_rmse_base_linear)
+rmse_mean_base_linear = mean(tst_rmse_base_linear)
 ```
 
 ```{r, echo=FALSE}
@@ -210,26 +236,26 @@ tst_rmse_base_log = rep(0,iterations)
 
 for(i in 1:iterations){
   #Train/Test split dataset for current iteration
-  smp_size <- floor(0.8 * nrow(summer_games_data))
-  trn_idx <- sample(seq_len(nrow(summer_games_data)), size = smp_size)
-  trn_data <- summer_games_data[trn_idx,]
-  tst_data <- summer_games_data[-trn_idx,]
+  smp_size = floor(0.8 * nrow(summer_games_data))
+  trn_idx = sample(seq_len(nrow(summer_games_data)), size = smp_size)
+  trn_data = summer_games_data[trn_idx,]
+  tst_data = summer_games_data[-trn_idx,]
   
-  base_log_reg <- glm(Podium ~ Age + Height + Weight, data = trn_data)
+  base_log_reg = glm(Podium ~ Age + Height + Weight, data = trn_data)
   
-  base_preds <- unname(predict(base_log_reg,tst_data))
-  base_preds <- ifelse(base_preds > 0.5,1,0)
-  tst_labels <- tst_data$Podium
+  base_preds = unname(predict(base_log_reg,tst_data))
+  base_preds = ifelse(base_preds > 0.5,1,0)
+  tst_labels = tst_data$Podium
   for(j in 1:length(tst_labels)){
     if(tst_labels[j] == base_preds[j]){
       total_correct_base_log[i] = total_correct_base_log[i] + 1
     }
   }
   total_guessed_base_log[i] = length(tst_labels)
-  tst_rmse_base_log[i] <- sqrt(mean( (tst_data$Podium-base_preds)^2 ))
+  tst_rmse_base_log[i] = sqrt(mean( (tst_data$Podium-base_preds)^2 ))
 }
 average_acc_base_log = sum(total_correct_base_log) / sum(total_guessed_base_log)
-rmse_mean_base_log <- mean(tst_rmse_base_log)
+rmse_mean_base_log = mean(tst_rmse_base_log)
 ```
 
 ```{r, echo=FALSE}
@@ -242,28 +268,29 @@ tst_rmse_base_interaction = rep(0,iterations)
 
 for(i in 1:iterations){
   #Train/Test split dataset for current iteration
-  smp_size <- floor(0.8 * nrow(summer_games_data))
-  trn_idx <- sample(seq_len(nrow(summer_games_data)), size = smp_size)
-  trn_data <- summer_games_data[trn_idx,]
-  tst_data <- summer_games_data[-trn_idx,]
+  smp_size = floor(0.8 * nrow(summer_games_data))
+  trn_idx = sample(seq_len(nrow(summer_games_data)), size = smp_size)
+  trn_data = summer_games_data[trn_idx,]
+  tst_data = summer_games_data[-trn_idx,]
   
-  base_interaction <- glm(Podium ~ Height * Weight + Age, data = trn_data)
+  base_interaction = glm(Podium ~ Height * Weight + Age, data = trn_data)
   
-  base_preds <- unname(predict(base_interaction,tst_data))
-  base_preds <- ifelse(base_preds > 0.5,1,0)
-  tst_labels <- tst_data$Podium
+  base_preds = unname(predict(base_interaction,tst_data))
+  base_preds = ifelse(base_preds > 0.5,1,0)
+  tst_labels = tst_data$Podium
   for(j in 1:length(tst_labels)){
     if(tst_labels[j] == base_preds[j]){
       total_correct_base_interaction[i] = total_correct_base_interaction[i] + 1
     }
   }
   total_guessed_base_interaction[i] = length(tst_labels)
-  tst_rmse_base_interaction[i] <- sqrt(mean( (tst_data$Podium-base_preds)^2 ))
+  tst_rmse_base_interaction[i] = sqrt(mean( (tst_data$Podium-base_preds)^2 ))
 }
 average_acc_base_interaction = sum(total_correct_base_interaction) / sum(total_guessed_base_interaction)
-rmse_mean_interaction <- mean(tst_rmse_base_interaction)
+rmse_mean_interaction = mean(tst_rmse_base_interaction)
 ```
 
+***
 
 ## Results
 
@@ -289,8 +316,8 @@ library(kableExtra)
 kable(results, format = "html", digits=4) %>%
   kable_styling(bootstrap_options = c("striped", "hover"), full_width = F)
 ```
-### Model Performance Comparison
 
+### Model Performance Comparison
 
 The ROC curve visualizes the trade-off between true positive rate and false positive rate across different classification thresholds. From our plot, we can observe:
 
@@ -302,10 +329,10 @@ The ROC curve visualizes the trade-off between true positive rate and false posi
 set.seed(07112001)
 
 #Create training and testing sets (80-20 split)
-smp_size <- floor(0.8 * nrow(summer_games_data))
-trn_idx <- sample(seq_len(nrow(summer_games_data)), size = smp_size)
-train_data <- summer_games_data[trn_idx,]
-test_data <- summer_games_data[-trn_idx,]
+smp_size = floor(0.8 * nrow(summer_games_data))
+trn_idx = sample(seq_len(nrow(summer_games_data)), size = smp_size)
+train_data = summer_games_data[trn_idx,]
+test_data = summer_games_data[-trn_idx,]
 
 step_model = step(glm(Podium ~ 1,  #initial search starts from intercept
                       data = train_data, family = "binomial"), 
@@ -333,17 +360,21 @@ legend("bottomright",
 ### Selected Model
 
 The Stepwise AIC model emerged as our preferred approach, incorporating:
+
 - Height
 - Weight
 - Age
 - Sport (as a factor)
-- Interaction terms between Weight:Age and Height:Age
+- Interaction terms between `Weight:Age` and `Height:Age`
+
+***
 
 ## Discussion
 
 The accuracy for the logistic regression models boast an impressive 85% accuracy. However, this is very misleading as each sport may only have three rows where individuals manage to podium.The naive linear regression model had the worst RMSE among the three biological models we simulated for this problem. It attained an average RMSE of 0.9252. The performance of the basic logistic regression and interaction models are almost identical based on the histograms above, however the means of each are slightly different: the basic logistic regression model had an average RMSE of 0.3794 and the interaction model had an RMSE of 0.3796, which argue against the interaction between Height and Weight. 
 
 From the latest simulation of training both models, an ANOVA shows that the basic logistic regression model is statistically similar to the interaction model. Assuming a significance level of $\alpha = 0.05$, our results would suggest that the interactions between the Height and Weight are likely unnecessary when creating an accurate predictor of medal odds.
+
 ```{r, echo= FALSE}
 anova(base_log_reg,base_interaction)
 ```
@@ -352,11 +383,11 @@ For this reason, we believe the basic logistic regression model is the best gene
 
 The ROC curve, which shows the false positive rate versus the false negative rate, indicates that the step-wise AIC is much less prone to prediction error, however it includes additional categorical predictors that may not be relevant to our question. Our goal for this project was to figure out, in a generalized fashion, what are the odds an athlete will podium based on the athletes biological metrics. Since generality is the goal, we would prefer the basic logistic regression model, however if specificity is the goal, the step-wise AIC is far superior in classifying medal odds when compared to the general biological logistic regression model.
 
+***
 
 ## Appendix
 
-Our code we made public at submission time:
-github.com link
+Our code is made public at our [Github repo](https://github.com/aadibhandary2001/DataProject) with updated changes as of 2:00pm CST on December 15, 2024.
 
 ### Analysis Contributors
 - Aadi Bhandary, Alvin Do, Milan Patel
