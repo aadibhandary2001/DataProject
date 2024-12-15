@@ -295,7 +295,7 @@ kable(results, format = "html", digits=4) %>%
 The ROC curve visualizes the trade-off between true positive rate and false positive rate across different classification thresholds. From our plot, we can observe:
 
 - The Stepwise AIC model (purple) appears to demonstrate the most favorable performance
-- Basic model (blue) exhibits the most limited discriminative power
+- Basic model (green) exhibits the most limited discriminative power
 
 ```{r, echo=FALSE, message=FALSE}
 #Stepwise AIC
